@@ -651,12 +651,12 @@ function loadForestFalls(){
     bounds.getCenter(center);
     var baseY=bounds.min.y;
     var spots=[],tries=0;
-    while(spots.length<100&&tries<10000){
+    while(spots.length<18&&tries<1600){
       tries++;
       var x=(rng()-0.5)*1120,z=(rng()-0.5)*1120;
       if(distToRoad(x,z).d<W+24)continue;
       var tooClose=false;
-      for(var j=0;j<spots.length;j++){if(Math.hypot(x-spots[j].x,z-spots[j].z)<14){tooClose=true;break;}}
+      for(var j=0;j<spots.length;j++){if(Math.hypot(x-spots[j].x,z-spots[j].z)<24){tooClose=true;break;}}
       if(!tooClose)spots.push({x:x,z:z});
     }
     spots.forEach(function(spot,index){
@@ -674,7 +674,7 @@ function loadForestFalls(){
     });
     forestFallsLoaded=true;
     forestFallsLoading=false;
-    console.log('Arbres oak détaillés chargés : '+spots.length+' / 100');
+    console.log('Arbres oak détaillés chargés : '+spots.length);
   },undefined,function(error){
     forestFallsLoading=false;
     console.warn('Chargement de oak-detailed impossible :',error);

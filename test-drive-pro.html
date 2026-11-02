@@ -877,8 +877,8 @@ function frame(now){
   drawMini();
   audioUpdate(kmh,gasV);
 
-  qTimer+=dt;
-  if(qTimer>2){qTimer=0;if(emaDt>1/22&&quality>0&&now-lastQChange>5000){applyQuality(quality-1);toast('Qualité réduite automatiquement');}}
+  // La qualité reste stable : aucun changement automatique pendant la conduite.
+  // Le joueur peut toujours la régler avec le bouton « Qualité ».
 
   renderer.render(scene,camera);
 }

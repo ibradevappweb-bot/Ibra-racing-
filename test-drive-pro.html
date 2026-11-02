@@ -691,8 +691,12 @@ function buildForest(){
   }
   for(var q=0;q<ca.length;q++)ca[q]*=2.3;
   g.setAttribute('color',new THREE.BufferAttribute(ca,3));g.computeVertexNormals();
-  var rockTex=new THREE.TextureLoader().load(ROCK_URI);rockTex.wrapS=rockTex.wrapT=THREE.RepeatWrapping;rockTex.repeat.set(200,200);rockTex.anisotropy=4;
-  var ter=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,map:rockTex}));ter.receiveShadow=true;scene.add(ter);
+  var rockLoader=new THREE.TextureLoader();
+  var rockTex=rockLoader.load('Ground078_2K-JPG_Color.jpg',function(t){t.encoding=THREE.sRGBEncoding;});
+  var rockNormal=rockLoader.load('Ground078_2K-JPG_NormalGL.jpg');
+  [rockTex,rockNormal].forEach(function(t){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(200,200);t.anisotropy=4;});
+  var rockMat=new THREE.MeshStandardMaterial({vertexColors:true,map:rockTex,normalMap:rockNormal,normalScale:new THREE.Vector2(0.55,0.55),roughness:0.96,metalness:0});
+  var ter=new THREE.Mesh(g,rockMat);ter.receiveShadow=true;scene.add(ter);
   var pos=[],cl=[],idx=[];
   for(var j=0;j<=N;j++){
     var p=pts[j%N],t=tangentAt(j%N),nx=-t.z,nz2=t.x,m=mudAt(j%N),v=0.04*Math.sin(j*1.7);

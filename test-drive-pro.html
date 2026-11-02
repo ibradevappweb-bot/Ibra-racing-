@@ -632,39 +632,52 @@ var forestGroup=null;
 var forestFallsLoaded=false,forestFallsLoading=false;
 function loadForestFalls(){
   if(forestFallsLoaded||forestFallsLoading||!forestGroup)return;
-  if(!THREE.GLTFLoader){console.warn('GLTFLoader indisponible : forêt additionnelle ignorée.');return;}
+  if(!THREE.GLTFLoader){console.warn('GLTFLoader indisponible : arbres détaillés ignorés.');return;}
   forestFallsLoading=true;
   var loader=new THREE.GLTFLoader();
-  var url='https://raw.githubusercontent.com/ibradevappweb-bot/-IBRA-CITY-3D/main/forest_falls%20(1).glb';
+  var url='https://raw.githubusercontent.com/ibradevappweb-bot/Ibra-racing-/main/oak-detailed.glb';
   loader.load(url,function(gltf){
-    var obj=gltf.scene;
-    obj.updateMatrixWorld(true);
-    var bounds=new THREE.Box3().setFromObject(obj);
+    var source=gltf.scene;
+    source.updateMatrixWorld(true);
+    var bounds=new THREE.Box3().setFromObject(source);
     var size=new THREE.Vector3();
     bounds.getSize(size);
-    var maxDim=Math.max(size.x,size.y,size.z);
-    if(!isFinite(maxDim)||maxDim<=0){forestFallsLoading=false;console.warn('Modèle forest_falls invalide : dimensions nulles.');return;}
-    var scale=Math.min(1,90/maxDim);
-    obj.scale.setScalar(scale);
-    obj.updateMatrixWorld(true);
-    bounds.setFromObject(obj);
+    if(!isFinite(size.y)||size.y<=0){forestFallsLoading=false;console.warn('Modèle oak-detailed invalide : hauteur nulle.');return;}
+    var scale=9/size.y;
+    source.scale.setScalar(scale);
+    source.updateMatrixWorld(true);
+    bounds.setFromObject(source);
     var center=new THREE.Vector3();
     bounds.getCenter(center);
-    var spots=[{x:0,z:340},{x:100,z:300},{x:-100,z:300},{x:0,z:-340},{x:120,z:-300},{x:-120,z:-300}];
-    var spot=spots[0];
-    for(var i=0;i<spots.length;i++){if(distToRoad(spots[i].x,spots[i].z).d>70){spot=spots[i];break;}}
-    obj.position.x+=spot.x-center.x;
-    obj.position.z+=spot.z-center.z;
-    obj.position.y+=H(spot.x,spot.z)-bounds.min.y;
-    obj.traverse(function(n){
-      if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}
+    var baseY=bounds.min.y;
+    var spots=[],tries=0;
+    while(spots.length<18&&tries<1600){
+      tries++;
+      var x=(rng()-0.5)*1120,z=(rng()-0.5)*1120;
+      if(distToRoad(x,z).d<W+24)continue;
+      var tooClose=false;
+      for(var j=0;j<spots.length;j++){if(Math.hypot(x-spots[j].x,z-spots[j].z)<24){tooClose=true;break;}}
+      if(!tooClose)spots.push({x:x,z:z});
+    }
+    spots.forEach(function(spot,index){
+      var tree=source.clone(true);
+      tree.position.x+=spot.x-center.x;
+      tree.position.z+=spot.z-center.z;
+      tree.position.y+=H(spot.x,spot.z)-baseY;
+      var variation=0.82+rng()*0.38;
+      tree.scale.multiplyScalar(variation);
+      tree.rotation.y=rng()*Math.PI*2;
+      tree.traverse(function(n){
+        if(n.isMesh){n.castShadow=false;n.receiveShadow=true;}
+      });
+      forestGroup.add(tree);
     });
-    forestGroup.add(obj);
     forestFallsLoaded=true;
     forestFallsLoading=false;
+    console.log('Arbres oak détaillés chargés : '+spots.length);
   },undefined,function(error){
     forestFallsLoading=false;
-    console.warn('Chargement de forest_falls impossible :',error);
+    console.warn('Chargement de oak-detailed impossible :',error);
   });
 }
 function buildForest(){

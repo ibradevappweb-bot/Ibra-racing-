@@ -32,6 +32,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fc7ff;font-family:sy
 #ovBox{background:#0d1620f0;border:1px solid #fff4;border-radius:16px;padding:18px 22px;max-width:88%;text-align:center}
 #ovBox .cr{margin-top:10px;font:500 10px sans-serif;opacity:.6}#ovBox h2{margin:0 0 8px;font:800 22px sans-serif}#ovBox p{margin:0 0 14px;font:500 14px/1.45 sans-serif;white-space:pre-line}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#10151c;font:700 18px sans-serif;z-index:5}
+#townCredit{position:fixed;right:6px;bottom:4px;z-index:8;pointer-events:none;font:10px/1.2 system-ui,sans-serif;color:#ffffffb8;text-shadow:0 1px 3px #000;}
 </style>
 </head>
 <body>
@@ -56,6 +57,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fc7ff;font-family:sy
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>if(typeof THREE==='undefined'){document.write('<script src="three.min.js"><\/script>');}</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function(){
 'use strict';
@@ -1280,10 +1282,37 @@ function genPts(id){
   }
   for(var j=1;j<=N;j++){var a=pts[j-1],b=pts[j%N];cum.push(cum[j-1]+Math.hypot(b.x-a.x,b.z-a.z));}
 }
+/* ---- Quartier 3D importé : Isparta City Block, Mikhail Volkov (CC BY 4.0) ---- */
+var townModel=null,townLoading=false;
+function loadTownModel(){
+  if(townModel||townLoading||!cityGroup)return;
+  if(!THREE.GLTFLoader){console.warn('GLTFLoader indisponible');return;}
+  townLoading=true;
+  new THREE.GLTFLoader().load('./isparta_city_block_turkey_optimized.glb',function(gltf){
+    var root=gltf.scene;
+    root.updateMatrixWorld(true);
+    var bounds=new THREE.Box3().setFromObject(root);
+    var size=bounds.getSize(new THREE.Vector3());
+    var center=bounds.getCenter(new THREE.Vector3());
+    var largest=Math.max(size.x,size.z);
+    var scale=largest>0?Math.min(1,150/largest):1;
+    root.scale.setScalar(scale);
+    root.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+    root.traverse(function(o){if(o.isMesh){o.castShadow=false;o.receiveShadow=true;o.frustumCulled=true;}});
+    root.updateMatrixWorld(true);
+    cityGroup.add(root);
+    townModel=root;
+    townLoading=false;
+    console.info('Quartier 3D Isparta chargé');
+  },undefined,function(err){
+    townLoading=false;
+    console.error('Chargement du quartier Isparta impossible',err);
+  });
+}
 function loadMap(id){
   var f=id==='forest',k=id==='conakry';curMap=id;W=f?6.5:k?7:8;genPts(id);
   if(f){if(!forestGroup)buildForest();}else if(k){if(!ckGroup)buildConakry();}else if(!cityGroup)buildCity();
-  if(cityGroup)cityGroup.visible=!f&&!k;if(forestGroup)forestGroup.visible=f;if(ckGroup)ckGroup.visible=k;
+  if(cityGroup)cityGroup.visible=!f&&!k;if(forestGroup)forestGroup.visible=f;if(ckGroup)ckGroup.visible=k;if(!f&&!k)loadTownModel();
   LAPS=f?2:3;NCP=f?8:10;CP_BONUS=f?14:9;T0=f?40:30;cpIdx.length=0;for(var q=1;q<=NCP;q++)cpIdx.push(Math.round(q*N/NCP)%N);
   var t0=tangentAt(0);startYaw=Math.atan2(t0.x,t0.z);
   var col=f?0x9fb0a4:k?0xe6d3b4:HORIZON;scene.background.setHex(col);scene.fog.color.setHex(col);scene.fog.near=f?30:k?90:170;scene.fog.far=f?380:k?850:1150;
@@ -1435,5 +1464,6 @@ requestAnimationFrame(frame);
 window.__ibra={G:G,startGame:startGame,cpIdx:cpIdx,loadMap:loadMap,H:H,mudAt:mudAt,cfg:function(){return{LAPS:LAPS,NCP:NCP,W:W,map:curMap,dirt:dirt};},setS:function(x,z,yaw){S=Phys.newState(x,z,yaw);},Phys:Phys,getState:function(){return S;},keys:keys,pad:pad,distToRoad:distToRoad,pts:pts,W:W,respawn:respawn,getQuality:function(){return quality;},applyQuality:applyQuality};
 })();
 </script>
+<div id="townCredit">Quartier 3D : Isparta City Block — Mikhail Volkov — CC BY 4.0</div>
 </body>
 </html>

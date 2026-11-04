@@ -1299,7 +1299,7 @@ function loadTownModel(){
     var scale=largest>0?Math.min(1,150/largest):1;
     root.scale.setScalar(scale);
     /* Quartier placé à côté du circuit, sans recouvrir la chaussée centrale. */
-    root.position.set(360-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+    root.position.set(-440-center.x*scale,-bounds.min.y*scale,-center.z*scale);
     root.traverse(function(o){if(o.isMesh){o.castShadow=false;o.receiveShadow=true;o.frustumCulled=true;}});
     root.updateMatrixWorld(true);
     ckGroup.add(root);
@@ -1413,7 +1413,7 @@ function frame(now){
   }
   if(fo&&!off)inp.mud=mudAt(rd.i);
   var n=Math.ceil(dt/(1/60)),h=dt/n;
-  for(var k=0;k<n;k++)Phys.step(S,inp,h,off);
+  for(var k=0;k<n;k++){Phys.step(S,inp,h,off);if(curMap==='conakry'&&S.x>330&&S.x<2030&&Math.abs(S.z)<1200){respawn();toast('Limite de la mer : retour sur la route');break;}}
   updateGame(dt);
   if(Math.hypot(S.x,S.z)>2800)respawn();
   tmEl.textContent=fmt(G.left);tmEl.className=(G.st==='run'&&G.left<10)?'low':'';lpEl.textContent='Tour '+G.lap+'/'+LAPS+' · Point '+G.cp+'/'+NCP;

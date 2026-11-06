@@ -1,5 +1,5 @@
-# Deploy the existing game from main to GitHub Pages.
-name: Deploy static content to Pages
+# Publish the existing game and extract the V11 archive automatically.
+name: Deploy IBRA RACING to Pages
 
 on:
   push:
@@ -24,12 +24,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Upload artifact
+
+      - name: Extract V11 archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+          archive="IBRA_RACING_v11_cabine_nuit.7z"
+          test -f "$archive"
+          mkdir -p "$RUNNER_TEMP/ibra-v11" v11
+          7z x "$archive" -o"$RUNNER_TEMP/ibra-v11" -y
+          html="$(find "$RUNNER_TEMP/ibra-v11" -type f -iname '*.html' -printf '%s %p\\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+          if [ -z "$html" ]; then
+            echo "No HTML file found in the V11 archive."
+            find "$RUNNER_TEMP/ibra-v11" -maxdepth 4 -type f
+            exit 1
+          fi
+          cp -a "$RUNNER_TEMP/ibra-v11/." v11/
+          relative="${html#"$RUNNER_TEMP/ibra-v11/"}"
+          printf '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./%s"><title>IBRA RACING V11</title></head><body><p><a href="./%s">Ouvrir IBRA RACING V11 – Cabine Nuit</a></p><script>location.replace("./%s");</script></body></html>\\n' "$relative" "$relative" "$relative" > v11/index.html
+          echo "V11 HTML selected: $relative"
+          echo "V11 files:"
+          find v11 -maxdepth 3 -type f | head -n 100
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

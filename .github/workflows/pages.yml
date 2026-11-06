@@ -57,22 +57,31 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          files = sorted(Path("v11").rglob("*.html"), key=lambda p: p.stat().st_size, reverse=True)
+          files = sorted((p for p in Path("v11").rglob("*.html") if p.name != "index.html"), key=lambda p: p.stat().st_size, reverse=True)
           if not files:
-              raise SystemExit("No extracted HTML available")
+              raise SystemExit("No extracted game HTML available")
           p = files[0]
           s = p.read_text(errors="replace")
           print(f"INSPECT_FILE={p} SIZE={len(s)}")
-          for label, pattern in [
-              ("SCRIPT_TAGS", r"<script[^>]*>"),
-              ("IMPORTS", r"(?:import\\s+.*?from\\s+|https?://[^\\s\"']*(?:three|gltf)[^\\s\"']*)"),
-              ("CAR_COCKPIT_ROAD_KEYWORDS", r".{0,180}(?:steering|wheel|cockpit|interior|seat|dashboard|speedometer|highway|road|GLTFLoader|gltf|THREE).{0,260}"),
-          ]:
-              print(f"--- {label} ---")
-              matches = list(re.finditer(pattern, s, re.I | re.S))
-              print(f"MATCH_COUNT={len(matches)}")
-              for m in matches[:45]:
-                  print(re.sub(r"\\s+", " ", m.group(0))[:700])
+          print("--- SCRIPT TAGS ---")
+          for m in re.finditer(r"<script[^>]*>", s, re.I):
+              print(m.group(0)[:500])
+          print("--- KEYWORD CONTEXTS ---")
+          for word in ["steering", "wheel", "cockpit", "interior", "seat", "dashboard", "speedometer", "highway", "road", "GLTFLoader", "gltf", "THREE", "camera"]:
+              positions = []
+              start = 0
+              while len(positions) < 8:
+                  i = s.lower().find(word.lower(), start)
+                  if i < 0: break
+                  positions.append(i)
+                  start = i + len(word)
+              print(f"[{word}] count={s.lower().count(word.lower())}")
+              for i in positions:
+                  print(s[max(0,i-180):min(len(s),i+320)].replace("\\n"," ")[:520])
+          print("--- SCRIPT SRC / LIBRARY LINES ---")
+          for line in s.splitlines():
+              if "<script" in line.lower() or "three" in line.lower() or "gltf" in line.lower():
+                  print(line[:600])
           PY
 
       - name: Upload Pages artifact

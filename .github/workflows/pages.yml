@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "pages-v11-inspection"
   cancel-in-progress: false
 
 jobs:

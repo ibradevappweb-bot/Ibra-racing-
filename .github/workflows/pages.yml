@@ -1,4 +1,4 @@
-# Publish the existing game and extract the V11 archive automatically.
+# Publish V11 unchanged and build the integrated V12 from its extracted source.
 name: Deploy IBRA RACING to Pages
 
 on:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages-v11-inspection"
+  group: "pages"
   cancel-in-progress: false
 
 jobs:
@@ -51,38 +51,16 @@ jobs:
           echo "V11 files:"
           find v11 -maxdepth 3 -type f | head -n 100
 
-      - name: Inspect V11 integration points
+      - name: Build V12 with integrated GLB assets
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          files = sorted((p for p in Path("v11").rglob("*.html") if p.name != "index.html"), key=lambda p: p.stat().st_size, reverse=True)
-          if not files:
-              raise SystemExit("No extracted game HTML available")
-          p = files[0]
-          s = p.read_text(errors="replace")
-          print(f"INSPECT_FILE={p} SIZE={len(s)}")
-          print("--- SCRIPT TAGS ---")
-          for m in re.finditer(r"<script[^>]*>", s, re.I):
-              print(m.group(0)[:500])
-          print("--- KEYWORD CONTEXTS ---")
-          for word in ["steering", "wheel", "cockpit", "interior", "seat", "dashboard", "speedometer", "highway", "road", "GLTFLoader", "gltf", "THREE", "camera"]:
-              positions = []
-              start = 0
-              while len(positions) < 8:
-                  i = s.lower().find(word.lower(), start)
-                  if i < 0: break
-                  positions.append(i)
-                  start = i + len(word)
-              print(f"[{word}] count={s.lower().count(word.lower())}")
-              for i in positions:
-                  print(s[max(0,i-180):min(len(s),i+320)].replace("\\n"," ")[:520])
-          print("--- SCRIPT SRC / LIBRARY LINES ---")
-          for line in s.splitlines():
-              if "<script" in line.lower() or "three" in line.lower() or "gltf" in line.lower():
-                  print(line[:600])
-          PY
+          set -euo pipefail
+          python3 tools/integrate_v12.py
+          test -s v12/IBRA_RACING_v12_cabine_autoroute.html
+          test -s v12/index.html
+          grep -q "IBRA_V12_GLTF_INTEGRATION" v12/IBRA_RACING_v12_cabine_autoroute.html
+          echo "V12 built successfully:"
+          ls -lh v12/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
